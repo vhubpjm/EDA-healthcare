@@ -1,0 +1,99 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import plotly.express as px
+import warnings
+
+from matplotlib.font_manager import fontManager
+from matplotlib.pyplot import subplots, xlabel
+from skimage.color.rgb_colors import darkgreen
+
+warnings.filterwarnings('ignore')
+#load the dataset
+healthdata = pd.read_csv('healthcare_dataset.csv')
+print(healthdata.head().T)
+#with.T we can get a even more clear tabular presentation of dataset
+#transposed view
+#dataset overview
+healthdata.info()
+#info gives summary of dataframe
+print(healthdata.describe())
+#to get the summary of categorical variables,below code can be used
+print(healthdata.describe(include ='O'))
+#below code is to get dimension of dataframe
+print(healthdata.shape)
+
+##DATA CLEANING##
+#to check null values
+print(healthdata.isnull().sum())
+#check for duplicates
+print(healthdata.duplicated().sum())
+
+print(healthdata.head())
+#format datatypes for variables #here format object to datetime
+for date in ['Date of Admission','Discharge Date']:
+    healthdata[date] = pd.to_datetime(healthdata[date])
+healthdata['Days Hospitalized'] = (healthdata['Discharge Date']-healthdata['Date of Admission']).dt.days
+#we got the days hospitalized!
+#now we need to change the data type from date to int
+healthdata['Days Hospitalized'] = healthdata['Days Hospitalized'].astype(int)
+#astype() is function to change datatype
+print(healthdata['Days Hospitalized'])
+#let's drop irrelevant data not required for our analysis
+healthdata = healthdata.drop(columns=['Date of Admission','Room Number','Discharge Date'])
+print(healthdata.columns)
+
+##DATA EXPLORATION & VISUALIZATION##
+#finding data distribution for all variables
+for col in healthdata.columns:
+    print(healthdata[col].value_counts())
+    print('--')
+#now let's plot histograms to find frequency of numeric columns
+for col in healthdata.columns:
+    if healthdata[col].dtype == 'int'or healthdata[col].dtype == 'float' :
+        plt.figure(figsize = (15,10))
+        plt.style.use('seaborn-v0_8-dark-palette')
+        plt.subplot(3,3,3)
+        sns.histplot(healthdata[col],kde=True,color= 'darkred')
+        plt.ylabel('Frequency',fontsize = 15)
+        plt.xlabel(col,fontsize = 10)
+        plt.title(f'Distribution of {col} among Patients',fontsize = 15,weight = 'bold')
+        print('_'*100)
+        plt.show()
+#plotting pie chart and bar chart for categorical variables
+for col in healthdata.columns:
+    if healthdata[col].dtype == 'O' and col in ['Gender','Blood Type','Medical Condition']:
+       fig,ax = plt.subplots(1,2,figsize = (15,6))
+       fig.suptitle(col,fontsize = 16,weight = 'bold')
+       plt.subplot(1,2,1)
+       category_count = healthdata[col].value_counts().sort_values()
+       category_count.plot(kind = 'barh',color = plt.cm.Set2.colors)
+       for index,value in enumerate(category_count):
+           plt.text(value,index,str(value),fontsize = 12,va = 'center')
+       plt.xlabel('Count')
+       plt.subplot(1,2,2)
+       category_count.plot(kind = 'pie',labels = category_count.index,autopct = '%1.1f%%',textprops = {'fontsize':15})
+       plt.ylabel('')
+       plt.show()
+       print("_" * 100)
+##let's find the distribution of medical coditions among genders
+gendermedcdtn = healthdata.groupby(['Medical Condition','Gender']).size().sort_values().unstack()
+print(gendermedcdtn)
+print("_"*100)
+
+gendermedcdtn.plot(kind = 'bar')
+plt.title('Distribution of medical conditions among genders')
+plt.xlabel('Gender')
+plt.ylabel('Frequency')
+plt.xticks(rotation = 0) #this is about placement of titles on x-axis
+plt.show()
+##Distribution of different age groups
+min_age = healthdata['Age'].min()
+max_age = healthdata['Age'].max()
+print("the age range is:",min_age,',',max_age)
+healthdata['Ages'] = pd.cut(healthdata['Age'],bins = [18,28,38,48,58,68,78,88],labels=['18-28','29-38','39-48','49-58','59-68','69-78','79-88'],right=False)
+Ages = healthdata['Ages'].value_counts().sort_values
+print(Ages)
+
+
